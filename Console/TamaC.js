@@ -230,14 +230,6 @@ writeExif,
 addExif 
 } = require('../System/Data2')
 
-//DATA ADDBOT / JADIBOT PAIRING
-
-const {
-	jadibot,
-	stopbot,
-	listbot
-} = require('../Connection/jadibot')
-
 //END
 //SEETINGS STATUS BOT
 
